@@ -9,12 +9,13 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime/debug"
 	"syscall"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 )
 
-var version = "dev"
+var version string
 
 var (
 	optVersion = flag.Bool("version", false, "show version")
@@ -30,7 +31,11 @@ func main() {
 	flag.Parse()
 
 	if *optVersion {
-		fmt.Println(version)
+		if version != "" {
+			fmt.Println(version)
+		} else if info, ok := debug.ReadBuildInfo(); ok {
+			fmt.Println(info.Main.Version)
+		}
 		return
 	}
 
