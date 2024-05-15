@@ -18,9 +18,10 @@ import (
 var version string
 
 var (
-	optVersion = flag.Bool("version", false, "show version")
+	optVersion = flag.Bool("version", false, "Show version")
 	optProfile = flag.String("profile", "", "profile")
 	optRegion  = flag.String("region", "", "region")
+	optExport  = flag.Bool("export", false, "Output AWS credentials as export variables format")
 )
 
 func main() {
@@ -65,21 +66,25 @@ func run() error {
 		return fmt.Errorf("Credentials.Retrieve: %w", err)
 	}
 
-	if len(flag.Args()) == 0 {
-		return json.NewEncoder(os.Stdout).Encode(creds)
-	}
-
 	const accessKeyID = "AWS_ACCESS_KEY_ID"
 	const secretKey = "AWS_SECRET_ACCESS_KEY"
 	const sessionToken = "AWS_SESSION_TOKEN"
-	for _, e := range []string{accessKeyID, secretKey, sessionToken} {
-		os.Unsetenv(e)
+
+	if len(flag.Args()) == 0 {
+		if *optExport {
+			fmt.Fprintf(os.Stdout, "export %s=%q\n", accessKeyID, creds.AccessKeyID)
+			fmt.Fprintf(os.Stdout, "export %s=%q\n", secretKey, creds.SecretAccessKey)
+			if creds.SessionToken != "" {
+				fmt.Fprintf(os.Stdout, "export %s=%q\n", sessionToken, creds.SessionToken)
+			}
+			return nil
+		} else {
+			return json.NewEncoder(os.Stdout).Encode(creds)
+		}
 	}
 
-	os.Setenv(accessKeyID, creds.AccessKeyID)
-	os.Setenv(secretKey, creds.SecretAccessKey)
-	if creds.SessionToken != "" {
-		os.Setenv(sessionToken, creds.SessionToken)
+	for _, e := range []string{accessKeyID, secretKey, sessionToken} {
+		os.Unsetenv(e)
 	}
 
 	argv0 := flag.Arg(0)
@@ -89,6 +94,12 @@ func run() error {
 			return fmt.Errorf("exec.LookPath %s: %w", argv0, err)
 		}
 		argv0 = lp
+	}
+
+	os.Setenv(accessKeyID, creds.AccessKeyID)
+	os.Setenv(secretKey, creds.SecretAccessKey)
+	if creds.SessionToken != "" {
+		os.Setenv(sessionToken, creds.SessionToken)
 	}
 
 	return syscall.Exec(argv0, flag.Args(), os.Environ())
