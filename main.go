@@ -83,6 +83,7 @@ func run() error {
 		}
 	}
 
+	// Clear existing AWS credentials from environment
 	for _, e := range []string{accessKeyID, secretKey, sessionToken} {
 		os.Unsetenv(e)
 	}
@@ -96,11 +97,13 @@ func run() error {
 		argv0 = lp
 	}
 
-	os.Setenv(accessKeyID, creds.AccessKeyID)
-	os.Setenv(secretKey, creds.SecretAccessKey)
+	// Create new environment variables array with AWS credentials
+	env := os.Environ()
+	env = append(env, fmt.Sprintf("%s=%s", accessKeyID, creds.AccessKeyID))
+	env = append(env, fmt.Sprintf("%s=%s", secretKey, creds.SecretAccessKey))
 	if creds.SessionToken != "" {
-		os.Setenv(sessionToken, creds.SessionToken)
+		env = append(env, fmt.Sprintf("%s=%s", sessionToken, creds.SessionToken))
 	}
 
-	return syscall.Exec(argv0, flag.Args(), os.Environ())
+	return syscall.Exec(argv0, flag.Args(), env)
 }
