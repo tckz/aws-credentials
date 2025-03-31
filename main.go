@@ -24,6 +24,12 @@ var (
 	optExport  = flag.Bool("export", false, "Output AWS credentials as export variables format")
 )
 
+const (
+	accessKeyID  = "AWS_ACCESS_KEY_ID"
+	secretKey    = "AWS_SECRET_ACCESS_KEY"
+	sessionToken = "AWS_SESSION_TOKEN"
+)
+
 func main() {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] [argv...]\n", filepath.Base(os.Args[0]))
@@ -65,10 +71,6 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("Credentials.Retrieve: %w", err)
 	}
-
-	const accessKeyID = "AWS_ACCESS_KEY_ID"
-	const secretKey = "AWS_SECRET_ACCESS_KEY"
-	const sessionToken = "AWS_SESSION_TOKEN"
 
 	if len(flag.Args()) == 0 {
 		if *optExport {
